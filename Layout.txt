@@ -1,0 +1,16 @@
+ConversationList:
+	onCreate()
+	onPause()
+	onResume()
+	openConversation(Conversation c)
+	
+ComposeMessage:
+	sendMessage()
+	setConversation()
+	
+ContactStore:
+
+ConversationStore:
+
+MessageStore:
+	
