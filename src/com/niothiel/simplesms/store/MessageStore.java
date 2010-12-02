@@ -42,6 +42,7 @@ public class MessageStore {
 		mAdapter = new Adapter();
 		
 		// Add a meaningless comment here.
+		// Another useless one here.
 	}
 	
 	public void bindView(ListView lv) {
