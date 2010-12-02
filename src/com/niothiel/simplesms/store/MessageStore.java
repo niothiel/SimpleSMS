@@ -40,9 +40,6 @@ public class MessageStore {
 		mThreadId = threadId;
 		mItems = new ArrayList<Message>(50);
 		mAdapter = new Adapter();
-		
-		// Add a meaningless comment here.
-		// Another useless one here.
 	}
 	
 	public void bindView(ListView lv) {
