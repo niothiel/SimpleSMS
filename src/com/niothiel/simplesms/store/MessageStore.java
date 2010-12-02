@@ -39,7 +39,7 @@ public class MessageStore {
 		mName = name;
 		mThreadId = threadId;
 		mItems = new ArrayList<Message>(50);
-		mAdapter = new Adapter();
+		mAdapter = new Adapter(); 
 	}
 	
 	public void bindView(ListView lv) {
