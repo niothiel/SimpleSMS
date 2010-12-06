@@ -36,7 +36,7 @@ public class ContactStore {
 	
 	public static Contact getByNumber(String number) {
 		for(Contact c : sContacts.values()) {
-			if(c.getNumber().equals(number))
+			if(c.number.equals(number))
 				return c;
 		}
 		
@@ -48,7 +48,7 @@ public class ContactStore {
 	
 	public static Contact getByName(String name) {
 		for(Contact c : sContacts.values()) {
-			if(c.getName().equals(name))
+			if(c.name.equals(name))
 				return c;
 		}
 		return null;
@@ -64,7 +64,7 @@ public class ContactStore {
 		Contact c = new Contact(recipientId, name, number);
 		
 		if(name != null)
-			sContacts.put(c.getRecipientId(), c);
+			sContacts.put(c.recipientId, c);
 		return c;
 	}
 	
@@ -95,7 +95,7 @@ public class ContactStore {
 			}
 			
 			Contact c = Contact.parseCached(s);
-			sContacts.put(c.getRecipientId(), c);
+			sContacts.put(c.recipientId, c);
 		}
 	}
 	

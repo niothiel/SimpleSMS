@@ -32,6 +32,7 @@
 			android:layout_height="wrap_content"
 			android:layout_weight="1.0"
 			android:hint="Type to compose"
+			android:inputType="textShortMessage|textAutoCorrect|textCapSentences|textMultiLine"
 		/>
 		<Button android:id="@+id/send_button"
 			android:layout_width="wrap_content"

@@ -54,7 +54,6 @@ public class MessageStore {
 				null,
 				"date ASC"
 				);
-		
 		mItems.clear();
 		for(c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
 			Message m = new Message();

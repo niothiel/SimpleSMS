@@ -11,13 +11,10 @@ import com.niothiel.simplesms.ui.ConversationListItem;
 import com.niothiel.simplesms.util.Telephony;
 
 import android.content.ContentResolver;
-import android.content.Context;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
-import android.text.Html.TagHandler;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,7 +22,8 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 
 public class ConversationStore {
-	private static String[] PROJECTION = new String[] {
+	private static final String TAG = SMSApp.TAG + "/ConvStore";
+	private static final String[] PROJECTION = new String[] {
 		"_id",
 		"date",
 		"message_count",
@@ -35,67 +33,65 @@ public class ConversationStore {
 		"type"
 	};
 	
-	private static Uri URI = Uri.parse(
+	private static final Uri URI = Uri.parse(
 		"content://mms-sms/conversations?simple=true");
 	
 	private ArrayList<Conversation> mConversations;
 	private ContentResolver mResolver;
 	private LayoutInflater mInflater;
+	private Cursor mCursor;
 	private Adapter mAdapter;
 	
-	public ConversationStore(Context ctx) {
-		mResolver = ctx.getContentResolver();
+	public ConversationStore() {
+		mResolver = SMSApp.getContext().getContentResolver();
 		mConversations = new ArrayList<Conversation>(20);
-		mInflater = LayoutInflater.from(ctx);
-		mAdapter = new Adapter();
-		
-		Uri observable = Telephony.MmsSms.CONTENT_CONVERSATIONS_URI;
-		Log.d("SimpleSMS", "Observing URI: " + observable.toString());
-		//mResolver.registerContentObserver(observable, true, new ContentObserver(null));
-	}
-	
-	public void requery() {
-		Benchmarker.start("ConvRequery");
-		mConversations.clear();
-		
-		Cursor c = mResolver.query(URI,
+		mInflater = LayoutInflater.from(SMSApp.getContext());
+		mCursor = mResolver.query(URI,
 				PROJECTION,
 				null,
 				null,
 				null
 				);
 		
-		if(c == null || c.getCount() == 0) {
+		mCursor.registerContentObserver(new ChangeObserver());
+		mAdapter = new Adapter();
+	}
+	
+	public void update() {
+		Benchmarker.start("ConvUpdate");
+		mConversations.clear();
+		mCursor.requery();
+		
+		if(mCursor == null || mCursor.getCount() == 0) {
 			return;
 		}
 		
-		c.moveToFirst();
+		mCursor.moveToFirst();
 		do {
 			Conversation conv = new Conversation();
-			conv.setThreadId(c.getLong(0));
-			conv.setDate(c.getLong(1));
-			conv.setMsgCount(c.getInt(2));
-			conv.setRead(c.getInt(5) == 1);
+			conv.threadId = mCursor.getLong(0);
+			conv.date = mCursor.getLong(1);
+			conv.msgCount = mCursor.getInt(2);
+			conv.read = mCursor.getInt(5) == 1;
 			
 			if(!mConversations.contains(conv))
 				mConversations.add(conv);
 			
-			int recipient_id = c.getInt(3);
+			int recipient_id = mCursor.getInt(3);
 			Contact recipient = ContactStore.getByRecipientId(recipient_id);
-			conv.setContact(recipient);
-		} while(c.moveToNext());
+			conv.contact = recipient;
+		} while(mCursor.moveToNext());
 		
-		c.close();
 		mAdapter.notifyDataSetChanged();
-		Benchmarker.stop("ConvRequery");
-	}
-	
-	public void bindView(ListView lv) {
-		lv.setAdapter(mAdapter);
+		Benchmarker.stop("ConvUpdate");
 	}
 	
 	public Conversation getConversation(int position) {
 		return mConversations.get(position);
+	}
+	
+	public void bindView(ListView listView) {
+		listView.setAdapter(mAdapter);
 	}
 	
 	private class Adapter extends BaseAdapter {
@@ -111,7 +107,7 @@ public class ConversationStore {
 
 		@Override
 		public long getItemId(int position) {
-			return mConversations.get(position).getThreadId();
+			return mConversations.get(position).threadId;
 		}
 
 		@Override
@@ -128,29 +124,14 @@ public class ConversationStore {
 		}
 	}
 	
-	public static long getOrCreateThreadId(String recipient) {
-        Uri.Builder uriBuilder = Uri.parse("content://mms-sms/threadID").buildUpon();
-        uriBuilder.appendQueryParameter("recipient", recipient);
-
-        Uri uri = uriBuilder.build();
-        Log.v("ComposeMessageAdapter", "getOrCreateThreadId uri: " + uri);
-        ContentResolver resolver = SMSApp.getContext().getContentResolver();
-        Cursor cursor = resolver.query(
-                uri, new String[] { "_id" }, null, null, null);
-        Log.v("ComposeMessageAdapter", "getOrCreateThreadId cursor cnt: " + cursor.getCount());
-        if (cursor != null) {
-            try {
-                if (cursor.moveToFirst()) {
-                    return cursor.getLong(0);
-                } else {
-                    Log.e("ComposeMessageAdapter", "getOrCreateThreadId returned no rows!");
-                }
-            } finally {
-                cursor.close();
-            }
-        }
-
-        Log.e("ComposeMessageAdapter", "getOrCreateThreadId failed with uri " + uri.toString());
-        throw new IllegalArgumentException("Unable to find or allocate a thread ID.");
-    }
+	private class ChangeObserver extends ContentObserver {
+		public ChangeObserver() {
+			super(new Handler());
+		}
+		
+		@Override
+		public void onChange(boolean selfChange) {
+			update();
+		}
+	}
 }

@@ -1,14 +1,14 @@
 package com.niothiel.simplesms.data;
 
 public class Contact {
-	private long mRecipientId;
-	private String mName;
-	private String mNumber;
+	public long recipientId;
+	public String name;
+	public String number;
 	
 	public Contact(long recipientId, String name, String number) {
-		mRecipientId = recipientId;
-		mName = name;
-		mNumber = number;
+		this.recipientId = recipientId;
+		this.name = name;
+		this.number = number;
 	}
 	
 	public static Contact parseCached(String s) {
@@ -18,31 +18,18 @@ public class Contact {
 		String number = line[2];
 		return new Contact(recipientId, name, number);
 	}
-	
-	public long getRecipientId() {
-		return mRecipientId;
-	}
-	
-	public String getName() {
-		return mName;
-	}
-	
-	public String getNumber() {
-		return mNumber;
+		
+	@Override
+	public String toString() {
+		return recipientId + "\t" + name + "\t" + number;
 	}
 	
 	public String getFormatted() {
-		StringBuilder s = new StringBuilder();
-		s.append(mName);
-		s.append(" <");
-		s.append(mNumber);
-		s.append(">");
-		
-		return s.toString();
-	}
-	
-	@Override
-	public String toString() {
-		return mRecipientId + "\t" + mName + "\t" + mNumber;
+		StringBuilder sb = new StringBuilder();
+		sb.append(name);
+		sb.append(" <");
+		sb.append(number);
+		sb.append(">");
+		return sb.toString();
 	}
 }

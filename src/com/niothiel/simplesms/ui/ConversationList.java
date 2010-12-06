@@ -10,12 +10,8 @@
 package com.niothiel.simplesms.ui;
 
 import android.app.ListActivity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
-import android.text.Html.TagHandler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,16 +19,18 @@ import android.widget.ListView;
 
 import com.niothiel.simplesms.Benchmarker;
 import com.niothiel.simplesms.R;
+import com.niothiel.simplesms.SMSApp;
 import com.niothiel.simplesms.data.Conversation;
 import com.niothiel.simplesms.store.ContactStore;
 import com.niothiel.simplesms.store.ConversationStore;
+import com.niothiel.simplesms.util.Telephony;
 
 // TODO: Subscribe to SMS intents in AndroidManifest.xml
 // TODO: Revamp UI
 public class ConversationList extends ListActivity {
+	public static final String TAG = SMSApp.TAG + "/ConvList";
+	
 	private ConversationStore mStore;
-	private BroadcastReceiver mReceiver;
-	private IntentFilter mFilter;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -48,16 +46,20 @@ public class ConversationList extends ListActivity {
                 "Compose new message");
         getListView().addHeaderView(headerView, null, true);
         
-        mStore = new ConversationStore(this);
+        mStore = new ConversationStore();
         mStore.bindView(getListView());
+        mStore.update();
+        //getListView().setAdapter(new ConversationAdapter());
         
-        // Setup listener for incoming messages.
-        // TODO: Change this approach to use ContentObservers.
-        mReceiver = new ConversationListReceiver();
-        mFilter = new IntentFilter("android.provider.Telephony.SMS_RECEIVED");
-        mFilter.setPriority(-1000);
+        //Uri observable = Telephony.MmsSms.CONTENT_CONVERSATIONS_URI;
+		//getContentResolver().registerContentObserver(observable, true, new ConversationListObserver());
+		//Log.d("SimpleSMS", "Observing URI: " + observable.toString());
         
         Benchmarker.stop("onCreate");
+        
+        Intent i = getIntent();
+        if(i != null)
+        	Log.d(TAG, i.getAction() + ":" + i.getType());
         //Cursor c = managedQuery(Uri.parse("content://mms-sms/conversations"),
         //		null, null, null, null);
         //TempUtil.printCur(c);
@@ -68,7 +70,6 @@ public class ConversationList extends ListActivity {
     	Log.d("SimpleSMS", "Called onPause()!");
     	
 		ContactStore.exportCache();
-		unregisterReceiver(mReceiver);
 		super.onPause();
 	}
 
@@ -77,8 +78,7 @@ public class ConversationList extends ListActivity {
 		Log.d("SimpleSMS", "Called onResume()!");
 		
 		ContactStore.importCache();
-		mStore.requery();
-		registerReceiver(mReceiver, mFilter);
+		mStore.update();
 		super.onResume();
 	}
     
@@ -103,22 +103,11 @@ public class ConversationList extends ListActivity {
     	// down the line.
     	if(c != null) {
     		Log.d("SimpleSMS", c.toString());
-    		i.putExtra("thread_id", c.getThreadId());
-			i.putExtra("name", c.getContact().getName());
-			i.putExtra("number", c.getContact().getNumber());
+    		i.putExtra("thread_id", c.threadId);
+			i.putExtra("name", c.contact.name);
+			i.putExtra("number", c.contact.number);
     	}
     	startActivity(i);
-    }
-    
-    private class ConversationListReceiver extends BroadcastReceiver {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			Log.d("SimpleSMS", "Received SMS.");
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {}
-			mStore.requery();
-		}
     }
 }
 

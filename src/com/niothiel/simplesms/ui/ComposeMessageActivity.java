@@ -7,6 +7,7 @@ import com.niothiel.simplesms.data.Conversation;
 import com.niothiel.simplesms.store.ContactStore;
 import com.niothiel.simplesms.store.ConversationStore;
 import com.niothiel.simplesms.store.MessageStore;
+import com.niothiel.simplesms.util.Telephony;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -56,11 +57,11 @@ public class ComposeMessageActivity extends Activity {
 			
 			Contact c = new Contact(-1, name, number);
 			mConv = new Conversation();
-			mConv.setContact(c);
-			mConv.setThreadId(threadId);
+			mConv.contact = c;
+			mConv.threadId = threadId;
 			
 			// TODO: Need to remove the name parameter.
-			mStore = new MessageStore(mConv.getThreadId(), mConv.getContact().getName());
+			mStore = new MessageStore(mConv.threadId, mConv.contact.name);
 			mStore.bindView(mHistory);
 		}
 		
@@ -117,14 +118,14 @@ public class ComposeMessageActivity extends Activity {
 			
 			if(mConv == null) {
 				Contact c = ContactStore.getByNumber(mSubject.getText().toString());
-				long threadId = ConversationStore.getOrCreateThreadId(c.getNumber());
+				long threadId = Telephony.Threads.getOrCreateThreadId(SMSApp.getContext(), c.number);
 				mConv = new Conversation();
-				mConv.setContact(c);
-				mConv.setThreadId(threadId);
+				mConv.contact = c;
+				mConv.threadId = threadId;
 			}
 			sendMessage(text.toString());
 			if(mStore == null) {
-				mStore = new MessageStore(mConv.getThreadId(), mConv.getContact().getName());
+				mStore = new MessageStore(mConv.threadId, mConv.contact.name);
 				mStore.bindView(mHistory);
 			}
 			mStore.requery();
@@ -135,11 +136,11 @@ public class ComposeMessageActivity extends Activity {
 	private void sendMessage(String message) {
 		// Send the message
 		ContentValues values = new ContentValues(7);
-		values.put("address", mConv.getContact().getNumber());
+		values.put("address", mConv.contact.number);
 		values.put("read", false);
 		values.put("subject", "");
 		values.put("body", message);
-		values.put("thread_id", mConv.getThreadId());
+		values.put("thread_id", mConv.threadId);
 		values.put("type", 2);
 		
 		Uri uri = Uri.parse("content://sms/outbox");
@@ -147,7 +148,7 @@ public class ComposeMessageActivity extends Activity {
 		
 		Toast.makeText(SMSApp.getContext(), "Sending message: " + message, Toast.LENGTH_SHORT).show();
 		// TODO: Handle undelivered messages, etc.
-		SmsManager.getDefault().sendTextMessage(mConv.getContact().getNumber(),
+		SmsManager.getDefault().sendTextMessage(mConv.contact.number,
 				null,
 				message.toString(),
 				null,
@@ -159,7 +160,7 @@ public class ComposeMessageActivity extends Activity {
 			mSubject.setVisibility(View.VISIBLE);
 		}
 		else {
-			setTitle(mConv.getContact().getFormatted());
+			setTitle(mConv.contact.getFormatted());
 			mSubject.setVisibility(View.GONE);
 		}
 	}
