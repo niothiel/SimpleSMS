@@ -31,8 +31,6 @@ public class ComposeMessageActivity extends Activity {
 	private TextView mSubject;
 	private TextView mTextEditor;
 	private Button mSendButton;
-	private BroadcastReceiver mReceiver;
-	private IntentFilter mFilter;
 	
 	private MessageStore mStore;
 	private Conversation mConv;
@@ -63,12 +61,8 @@ public class ComposeMessageActivity extends Activity {
 			// TODO: Need to remove the name parameter.
 			mStore = new MessageStore(mConv.threadId, mConv.contact.name);
 			mStore.bindView(mHistory);
+			mStore.update();
 		}
-		
-		// TODO: Again, change this to a ContentObserver approach
-		mReceiver = new ComposeMessageReceiver();
-		mFilter = new IntentFilter("android.provider.Telephony.SMS_RECEIVED");
-		mFilter.setPriority(-1000);
 		
 		updateTitleBar();
 	}
@@ -76,7 +70,6 @@ public class ComposeMessageActivity extends Activity {
 	@Override
 	protected void onPause() {
 		Log.d("SimpleSMS", "Called onPause()!");
-		unregisterReceiver(mReceiver);
 		ContactStore.exportCache();
 		super.onPause();
 	}
@@ -84,22 +77,7 @@ public class ComposeMessageActivity extends Activity {
 	@Override
 	protected void onResume() {
 		Log.d("SimpleSMS", "Called onResume()!");
-		if(mStore != null)
-			mStore.requery();
-		registerReceiver(mReceiver, mFilter);
 		super.onResume();
-	}
-	
-	private class ComposeMessageReceiver extends BroadcastReceiver {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {}
-			Log.d("ComposeMessageActivity", "Requerying due to message received.");
-			if(mStore != null)
-				mStore.requery();
-		}
 	}
 	
 	private class SendListener implements OnClickListener {
@@ -128,7 +106,7 @@ public class ComposeMessageActivity extends Activity {
 				mStore = new MessageStore(mConv.threadId, mConv.contact.name);
 				mStore.bindView(mHistory);
 			}
-			mStore.requery();
+			mStore.update();
 			updateTitleBar();
 		}
 	}

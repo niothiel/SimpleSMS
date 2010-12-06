@@ -49,7 +49,6 @@ public class ConversationList extends ListActivity {
         mStore = new ConversationStore();
         mStore.bindView(getListView());
         mStore.update();
-        //getListView().setAdapter(new ConversationAdapter());
         
         //Uri observable = Telephony.MmsSms.CONTENT_CONVERSATIONS_URI;
 		//getContentResolver().registerContentObserver(observable, true, new ConversationListObserver());
@@ -78,7 +77,6 @@ public class ConversationList extends ListActivity {
 		Log.d("SimpleSMS", "Called onResume()!");
 		
 		ContactStore.importCache();
-		mStore.update();
 		super.onResume();
 	}
     

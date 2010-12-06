@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Handler;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
@@ -32,6 +34,7 @@ public class MessageStore {
 	private ListView mListView;
 	
 	private ArrayList<Message> mItems;
+	private Cursor mCursor;
 	
 	public MessageStore(long threadId, String name) {
 		mContext = SMSApp.getContext();
@@ -40,6 +43,14 @@ public class MessageStore {
 		mThreadId = threadId;
 		mItems = new ArrayList<Message>(50);
 		mAdapter = new Adapter();
+		// TODO: Make this query faster.
+		mCursor = mResolver.query(URI,
+				new String[] { "thread_id", "body", "type"},
+				"thread_id=" + mThreadId,
+				null,
+				"date ASC"
+				);
+		mCursor.registerContentObserver(new ChangeObserver());
 	}
 	
 	public void bindView(ListView lv) {
@@ -47,20 +58,17 @@ public class MessageStore {
 		lv.setAdapter(mAdapter);
 	}
 	
-	public void requery() {
-		Cursor c = mResolver.query(URI,
-				new String[] { "thread_id", "body", "type"},
-				"thread_id=" + mThreadId,
-				null,
-				"date ASC"
-				);
+	public void update() {
+		mCursor.requery();
 		mItems.clear();
-		for(c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+		
+		mCursor.moveToFirst();
+		do {
 			Message m = new Message();
-			m.type = c.getInt(2);
-			m.body = c.getString(1);
+			m.type = mCursor.getInt(2);
+			m.body = mCursor.getString(1);
 			mItems.add(m);
-		}
+		} while(mCursor.moveToNext());
 
 		markThreadRead();
 		mAdapter.notifyDataSetChanged();
@@ -129,6 +137,17 @@ public class MessageStore {
 			view.setText(formatMessage(msg), BufferType.SPANNABLE);
 			
 			return view;
+		}
+	}
+	
+	private class ChangeObserver extends ContentObserver {
+		public ChangeObserver() {
+			super(new Handler());
+		}
+		
+		@Override
+		public void onChange(boolean selfChange) {
+			update();
 		}
 	}
 }
